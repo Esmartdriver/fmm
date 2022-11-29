@@ -95,3 +95,7 @@ sync.sh
 .ipynb_checkpoints
 */.ipynb_checkpoints/*
 *.pyc
+
+# Venv
+
+venv
