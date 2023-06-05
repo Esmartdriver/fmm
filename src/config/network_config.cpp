@@ -58,10 +58,11 @@ bool FMM::CONFIG::NetworkConfig::validate() const {
     SPDLOG_CRITICAL("Network file not found {}",file);
     return false;
   }
-  bool shapefile_format = is_shapefile_format();
-  if (shapefile_format){
-    return true;
-  }
-  SPDLOG_CRITICAL("Network format not recognized {}",file);
-  return false;
+  //bool shapefile_format = is_shapefile_format();
+  //if (shapefile_format){
+  //  return true;
+  //}
+
+  //SPDLOG_CRITICAL("Network format not recognized {}",file);
+  return true;
 }
