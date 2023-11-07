@@ -92,7 +92,7 @@ bool STMATCHConfig::validate() const {
 }
 
 PyMatchResult STMATCH::match_wkt(
-  const std::string &wkt, const STMATCHConfig &config) {
+  const std::string &wkt, const std::vector<double> &timestamps, const STMATCHConfig &config) {
   LineString line = wkt2linestring(wkt);
   std::vector<double> timestamps;
   Trajectory traj{0, line, timestamps};
@@ -402,7 +402,7 @@ C_Path STMATCH::build_cpath(const TGOpath &opath, std::vector<int> *indices,
     const Candidate *b = opath[i + 1]->c;
     // SPDLOG_TRACE("Check a {} b {}", a->edge->id, b->edge->id);
     if ((a->edge->id != b->edge->id) ||
-        (a->offset-b->offset>a->edge->length * reverse_tolerance)) {
+        (a->offset-b->offset > a->edge->length * reverse_tolerance)) {
       auto segs = graph_.shortest_path_dijkstra(a->edge->target,
                                                 b->edge->source);
       // No transition found

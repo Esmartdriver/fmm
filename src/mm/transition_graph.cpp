@@ -62,17 +62,45 @@ const TGNode *TransitionGraph::find_optimal_candidate(const TGLayer &layer){
 
 TGOpath TransitionGraph::backtrack(){
   SPDLOG_TRACE("Backtrack on transition graph");
-  TGNode* track_cand=nullptr;
-  double final_prob = -std::numeric_limits<double>::infinity();
+  TGNode* track_best_cand=nullptr;
+  TGNode* track_second_best_cand=nullptr;
+  TGNode* track_third_best_cand=nullptr;
+  double highest_prob = -std::numeric_limits<double>::infinity();
+  double second_highest_prob = -std::numeric_limits<double>::infinity();
+  double third_highest_prob = -std::numeric_limits<double>::infinity();
   std::vector<TGNode>& last_layer = layers.back();
   for (auto c = last_layer.begin(); c!=last_layer.end(); ++c) {
-    if(final_prob < c->cumu_prob) {
-      final_prob = c->cumu_prob;
-      track_cand = &(*c);
+    if(c->cumu_prob > highest_prob) {
+      third_highest_prob = second_highest_prob;
+      track_third_best_cand = track_second_best_cand;
+
+      second_highest_prob = highest_prob;
+      track_second_best_cand = track_best_cand;
+
+      highest_prob = c->cumu_prob;
+      track_best_cand = &(*c);
+    }else if(c->cumu_prob > second_highest_prob){
+      third_highest_prob = second_highest_prob;
+      track_third_best_cand = track_second_best_cand;
+
+      second_highest_prob = c->cumu_prob;
+      track_second_best_cand = track_best_cand;
+    }else if(c->cumu_prob > third_highest_prob){
+      third_highest_prob = c->cumu_prob;
+      track_third_best_cand = &(*c);
     }
   }
-  TGOpath opath;
-  int i = layers.size();
+  TGOpath best_opath;
+  TGOpath second_best_opath;
+  TGOpath third_best_opath;
+  fill_opath(best_opath, track_best_cand);
+  fill_opath(second_best_opath, track_third_best_cand);
+  fill_opath(third_best_opath, track_second_best_cand);
+  SPDLOG_TRACE("Backtrack on transition graph done");
+  return opath;
+}
+
+void fill_opath(TGOpath *opath, const TGNode &track_cand){
   if (final_prob>-std::numeric_limits<double>::infinity()) {
     opath.push_back(track_cand);
     --i;
@@ -89,8 +117,6 @@ TGOpath TransitionGraph::backtrack(){
     }
     std::reverse(opath.begin(), opath.end());
   }
-  SPDLOG_TRACE("Backtrack on transition graph done");
-  return opath;
 }
 
 void TransitionGraph::print_optimal_info(){
