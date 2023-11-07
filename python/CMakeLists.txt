@@ -36,6 +36,7 @@ else()
     LANGUAGE python
     SOURCES ${PROJECT_SOURCE_DIR}/python/fmm.i)
   set_property(TARGET pyfmm PROPERTY OUTPUT_NAME fmm)
+  set_property(TARGET pyfmm PROPERTY SWIG_GENERATED_INCLUDE_DIRECTORIES ${PYTHON_INCLUDE_DIRS})
   swig_link_libraries(pyfmm FMMLIB ${PYTHON_LIBRARIES})
   install(TARGETS pyfmm DESTINATION ${PYTHON_SITE_PACKAGES})
 endif()
