@@ -166,7 +166,7 @@ std::vector<MatchResult> STMATCH::match_traj(const Trajectory &traj,
       indices[loop_counter],
       mgeom
     };
-    match_results.push_back()
+    match_results.push_back(match_result);
     loop_counter++;
   }
 
