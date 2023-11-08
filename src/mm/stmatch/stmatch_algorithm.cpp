@@ -219,7 +219,7 @@ std::string STMATCH::match_gps_file(
         int points_in_tr = trajectory.geom.get_num_points();
         std::vector<MM::MatchResult> results = match_traj(
           trajectory, stmatch_config);
-        result = results.at(0)
+        MM::MatchResult result = results.at(0);
         writer.write_result(trajectory,result);
         #pragma omp critical
         if (!result.cpath.empty()) {
@@ -241,8 +241,9 @@ std::string STMATCH::match_gps_file(
       }
       Trajectory trajectory = reader.read_next_trajectory();
       int points_in_tr = trajectory.geom.get_num_points();
-      MM::MatchResult result = match_traj(
+      std::vector<MM::MatchResult> results = match_traj(
         trajectory, stmatch_config);
+      MM::MatchResult result = results.at(0);
       writer.write_result(trajectory,result);
       if (!result.cpath.empty()) {
         points_matched += points_in_tr;
