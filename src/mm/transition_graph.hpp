@@ -104,7 +104,7 @@ public:
   /**
    * Fill opath from candidate
   */
-  void TransitionGraph::fill_opath(TGOpath *opath, const TGNode &track_cand);
+  void TransitionGraph::fill_opath(TGOpath *opath, const TGNode *track_cand);
   /**
    * Get a reference to the inner layers of the transition graph.
    */

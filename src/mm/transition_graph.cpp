@@ -100,22 +100,22 @@ std::vector<TGOpath> TransitionGraph::backtrack(){
   return std::vector<TGOpath>{best_opath, second_best_opath, third_best_opath};
 }
 
-void TransitionGraph::fill_opath(TGOpath *opath, const TGNode &track_cand){
+void TransitionGraph::fill_opath(TGOpath *opath, const TGNode *track_cand){
   if (final_prob>-std::numeric_limits<double>::infinity()) {
-    opath.push_back(track_cand);
+    opath->push_back(track_cand);
     --i;
     SPDLOG_TRACE("Optimal candidate {} edge id {} sp {} tp {} cp {}",
         i,track_cand->c->edge->id,track_cand->sp_dist,track_cand->tp,
         track_cand->cumu_prob);
     // Iterate from tail to head to assign path
     while ((track_cand=track_cand->prev)!=nullptr) {
-      opath.push_back(track_cand);
+      opath->push_back(track_cand);
       --i;
       SPDLOG_TRACE("Optimal candidate {} edge id {} sp {} tp {} cp {}",
         i,track_cand->c->edge->id,track_cand->sp_dist,track_cand->tp,
         track_cand->cumu_prob);
     }
-    std::reverse(opath.begin(), opath.end());
+    std::reverse(opath->begin(), opath->end());
   }
 }
 
