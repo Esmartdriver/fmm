@@ -57,6 +57,7 @@ using namespace FMM::CONFIG;
 %template(UnsignedIntVector) std::vector<unsigned int>;
 %template(DoubleVector) std::vector<double>;
 %template(PyCandidateVector) std::vector<FMM::PYTHON::PyCandidate>;
+%template(PyMatchResultVector) std::vector<FMM::PYTHON::PyMatchResult>;
 // %template(DoubleVVector) vector<vector<double> >;
 // %template(DoubleVVVector) vector<vector<vector<double> > >;
 // %template(IntSet) set<int>;
