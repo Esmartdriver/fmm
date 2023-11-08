@@ -94,7 +94,6 @@ bool STMATCHConfig::validate() const {
 std::vector<PyMatchResult> STMATCH::match_wkt(
   const std::string &wkt, const std::vector<double> &timestamps, const STMATCHConfig &config) {
   LineString line = wkt2linestring(wkt);
-  std::vector<double> timestamps;
   Trajectory traj{0, line, timestamps};
   std::vector<MatchResult> results = match_traj(traj, config);
   std::vector<PyMatchResult> outputs;
@@ -134,7 +133,7 @@ std::vector<MatchResult> STMATCH::match_traj(const Trajectory &traj,
   Traj_Candidates tc = network_.search_tr_cs_knn(
     traj.geom, config.k, config.radius);
   SPDLOG_DEBUG("Trajectory candidate {}", tc);
-  if (tc.empty()) return MatchResult{};
+  if (tc.empty()) return std::vector<MatchResult>{};
   SPDLOG_DEBUG("Generate dummy graph");
   DummyGraph dg(tc, config.reverse_tolerance);
   SPDLOG_DEBUG("Generate composite_graph");
@@ -151,9 +150,9 @@ std::vector<MatchResult> STMATCH::match_traj(const Trajectory &traj,
   std::vector<O_Path> opaths = build_opaths(tg_opaths);
   std::vector<std::vector<int>> indices;
   std::vector<C_Path> cpaths = build_cpaths(tg_opaths, &indices, config.reverse_tolerance);
-  SPDLOG_DEBUG("Opath is {}", opath);
-  SPDLOG_DEBUG("Indices is {}", indices);
-  SPDLOG_DEBUG("Complete path is {}", cpath);
+  SPDLOG_DEBUG("Opath is {}", opaths[0]);
+  SPDLOG_DEBUG("Indices is {}", indices[0]);
+  SPDLOG_DEBUG("Complete path is {}", cpaths[0]);
   std::vector<MatchResult> match_results;
   int loop_counter = 0;
   for (C_path cpath:cpaths){
@@ -171,7 +170,7 @@ std::vector<MatchResult> STMATCH::match_traj(const Trajectory &traj,
     loop_counter++;
   }
 
-  return match_results
+  return match_results;
 }
 
 std::string STMATCH::match_gps_file(
