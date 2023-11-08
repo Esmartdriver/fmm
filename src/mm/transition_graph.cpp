@@ -107,6 +107,7 @@ std::vector<TGOpath> TransitionGraph::backtrack(){
 }
 
 void TransitionGraph::fill_opath(TGOpath *opath, const TGNode *track_cand){
+  int i = layers.size();
   opath->push_back(track_cand);
   --i;
   SPDLOG_TRACE("Optimal candidate {} edge id {} sp {} tp {} cp {}",

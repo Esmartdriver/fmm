@@ -166,13 +166,13 @@ protected:
   /**
    * Create matched candidate path
    */
-  std::vector<MatchedCandidatePath> STMATCH::build_matched_candidate_paths(
+  std::vector<MatchedCandidatePath> build_matched_candidate_paths(
     const std::vector<TGOpath> &tg_opaths);
 
   /**
    * Create opath
    */
-  std::vector<O_Path> STMATCH::build_opaths(
+  std::vector<O_Path> build_opaths(
     const std::vector<TGOpath> &tg_opaths);
 
   /**
