@@ -100,7 +100,11 @@ public:
    * @return An optimal path connecting the first layer with last layer and
    * has the highest accumulative probability value.
    */
-  TGOpath backtrack();
+  std::vector<TGOpath> backtrack();
+  /**
+   * Fill opath from candidate
+  */
+  void TransitionGraph::fill_opath(TGOpath *opath, const TGNode &track_cand);
   /**
    * Get a reference to the inner layers of the transition graph.
    */

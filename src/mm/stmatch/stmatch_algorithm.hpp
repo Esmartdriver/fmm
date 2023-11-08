@@ -96,15 +96,15 @@ public:
    * @param config Map matching configuration
    * @return Map matching result in POD format used in Python API
    */
-  PYTHON::PyMatchResult match_wkt(
-    const std::string &wkt,const STMATCHConfig &config);
+  std::vector<PYTHON::PyMatchResult> match_wkt(
+    const std::string &wkt, const std::vector<double> &timestamps, const STMATCHConfig &config);
   /**
    * Match a trajectory to the road network
    * @param  traj   input trajector data
    * @param  config configuration of stmatch algorithm
    * @return map matching result
    */
-  MatchResult match_traj(const CORE::Trajectory &traj,
+  std::vector<MatchResult> match_traj(const CORE::Trajectory &traj,
                          const STMATCHConfig &config);
   /**
    * Match GPS data stored in a file
@@ -164,14 +164,26 @@ protected:
     const std::vector<NETWORK::NodeIndex> &targets, double delta);
 
   /**
+   * Create matched candidate path
+   */
+  std::vector<MatchedCandidatePath> STMATCH::build_matched_candidate_paths(
+    const std::vector<TGOpath> &tg_opaths);
+
+  /**
+   * Create opath
+   */
+  std::vector<O_Path> STMATCH::build_opaths(
+    const std::vector<TGOpath> &tg_opaths);
+
+  /**
    * Create a topologically connected path according to each matched
    * candidate
-   * @param  tg_opath A sequence of optimal candidate nodes
+   * @param  tg_opaths A sequence of optimal candidate nodes
    * @param  indices  the indices to be updated to store the index of matched
    * edge or candidate in the returned path.
    * @return A vector of edge id representing the traversed path
    */
-  C_Path build_cpath(const TGOpath &tg_opath, std::vector<int> *indices,
+  std::vector<C_Path> build_cpaths(const std::vector<TGOpath> &tg_opaths, std::vector<std::vector<int>> *indices,
                      double reverse_tolerance=0);
 private:
   const NETWORK::Network &network_;
