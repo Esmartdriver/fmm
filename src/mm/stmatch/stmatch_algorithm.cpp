@@ -155,7 +155,7 @@ std::vector<MatchResult> STMATCH::match_traj(const Trajectory &traj,
   SPDLOG_DEBUG("Complete path is {}", cpaths[0]);
   std::vector<MatchResult> match_results;
   int loop_counter = 0;
-  for (C_path cpath:cpaths){
+  for (C_Path cpath:cpaths){
     LineString mgeom = network_.complete_path_to_geometry(
       traj.geom, cpath);
     MatchResult match_result{
@@ -429,7 +429,7 @@ std::vector<C_Path> STMATCH::build_cpaths(const std::vector<TGOpath> &opaths, st
   SPDLOG_DEBUG("Build cpath from optimal candidate path");
   std::vector<C_Path> cpaths;
   for (TGOpath opath:opaths){
-    C_path cpath;
+    C_Path cpath;
     std::vector<int> indices;
     if (!opath.empty()){
       const std::vector<Edge> &edges = network_.get_edges();
