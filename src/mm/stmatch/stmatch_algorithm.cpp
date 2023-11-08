@@ -160,10 +160,10 @@ std::vector<MatchResult> STMATCH::match_traj(const Trajectory &traj,
       traj.geom, cpath);
     MatchResult match_result{
       traj.id, 
-      matched_candidate_paths[loop_counter], 
-      opath[loop_counter],
+      matched_candidate_paths.at(loop_counter), 
+      opaths.at(loop_counter),
       cpath,
-      indices[loop_counter],
+      indices.at(loop_counter),
       mgeom
     };
     match_results.push_back(match_result);
@@ -217,8 +217,9 @@ std::string STMATCH::match_gps_file(
       for (int i = 0; i < trajectories_fetched; ++i) {
         Trajectory &trajectory = trajectories[i];
         int points_in_tr = trajectory.geom.get_num_points();
-        MM::MatchResult result = match_traj(
+        std::vector<MM::MatchResult> results = match_traj(
           trajectory, stmatch_config);
+        result = results.at(0)
         writer.write_result(trajectory,result);
         #pragma omp critical
         if (!result.cpath.empty()) {
