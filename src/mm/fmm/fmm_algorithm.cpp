@@ -95,7 +95,8 @@ MatchResult FastMapMatch::match_traj(const Trajectory &traj,
   // The network will be used internally to update transition graph
   update_tg(&tg, traj, config.reverse_tolerance);
   SPDLOG_DEBUG("Optimal path inference");
-  TGOpath tg_opath = tg.backtrack();
+  std::vector<TGOpath> tg_opaths = tg.backtrack();
+  TGOpath tg_opath = tg_opaths.pop_front()
   SPDLOG_DEBUG("Optimal path size {}", tg_opath.size());
   MatchedCandidatePath matched_candidate_path(tg_opath.size());
   std::transform(tg_opath.begin(), tg_opath.end(),
