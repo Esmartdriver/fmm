@@ -37,8 +37,9 @@ void STMATCHApp::run() {
       for (int i = 0; i < trajectories_fetched; ++i) {
         Trajectory &trajectory = trajectories[i];
         int points_in_tr = trajectory.geom.get_num_points();
-        MM::MatchResult result = mm_model.match_traj(
+        std::vector<MM::MatchResult> results = mm_model.match_traj(
             trajectory, stmatch_config);
+        MM::MatchResult result = results.at(0);
         writer.write_result(trajectory,result);
         #pragma omp critical
         if (!result.cpath.empty()) {
@@ -61,8 +62,9 @@ void STMATCHApp::run() {
       }
       Trajectory trajectory = reader.read_next_trajectory();
       int points_in_tr = trajectory.geom.get_num_points();
-      MM::MatchResult result = mm_model.match_traj(
-          trajectory, stmatch_config);
+      std::vector<MM::MatchResult> results = mm_model.match_traj(
+            trajectory, stmatch_config);
+      MM::MatchResult result = results.at(0);
       writer.write_result(trajectory,result);
       if (!result.cpath.empty()) {
         points_matched += points_in_tr;
