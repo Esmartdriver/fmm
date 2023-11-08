@@ -91,39 +91,43 @@ bool STMATCHConfig::validate() const {
   return true;
 }
 
-PyMatchResult STMATCH::match_wkt(
+std::vector<PyMatchResult> STMATCH::match_wkt(
   const std::string &wkt, const std::vector<double> &timestamps, const STMATCHConfig &config) {
   LineString line = wkt2linestring(wkt);
   std::vector<double> timestamps;
   Trajectory traj{0, line, timestamps};
-  MatchResult result = match_traj(traj, config);
-  PyMatchResult output;
-  output.id = result.id;
-  output.opath = result.opath;
-  output.cpath = result.cpath;
-  output.mgeom = result.mgeom;
-  output.indices = result.indices;
-  for (int i = 0; i < result.opt_candidate_path.size(); ++i) {
-    const MatchedCandidate &mc = result.opt_candidate_path[i];
-    output.candidates.push_back(
-      {i,
-       mc.c.edge->id,
-       graph_.get_node_id(mc.c.edge->source),
-       graph_.get_node_id(mc.c.edge->target),
-       mc.c.dist,
-       mc.c.offset,
-       mc.c.edge->length,
-       mc.ep,
-       mc.tp,
-       mc.sp_dist}
-      );
-    output.pgeom.add_point(mc.c.point);
+  std::vector<MatchResult> results = match_traj(traj, config);
+  std::vector<PyMatchResult> outputs;
+  for (MatchResult result:results){
+    PyMatchResult output;
+    output.id = result.id;
+    output.opath = result.opath;
+    output.cpath = result.cpath;
+    output.mgeom = result.mgeom;
+    output.indices = result.indices;
+    for (int i = 0; i < result.opt_candidate_path.size(); ++i) {
+      const MatchedCandidate &mc = result.opt_candidate_path[i];
+      output.candidates.push_back(
+        {i,
+        mc.c.edge->id,
+        graph_.get_node_id(mc.c.edge->source),
+        graph_.get_node_id(mc.c.edge->target),
+        mc.c.dist,
+        mc.c.offset,
+        mc.c.edge->length,
+        mc.ep,
+        mc.tp,
+        mc.sp_dist}
+        );
+      output.pgeom.add_point(mc.c.point);
+    }
+    outputs.push_back(output);
   }
-  return output;
+  return outputs;
 };
 
 // Procedure of HMM based map matching algorithm.
-MatchResult STMATCH::match_traj(const Trajectory &traj,
+std::vector<MatchResult> STMATCH::match_traj(const Trajectory &traj,
                                 const STMATCHConfig &config) {
   SPDLOG_DEBUG("Count of points in trajectory {}", traj.geom.get_num_points());
   SPDLOG_DEBUG("Search candidates");
@@ -141,31 +145,33 @@ MatchResult STMATCH::match_traj(const Trajectory &traj,
   // The network will be used internally to update transition graph
   update_tg(&tg, cg, traj, config);
   SPDLOG_DEBUG("Optimal path inference");
-  TGOpath tg_opath = tg.backtrack();
-  SPDLOG_DEBUG("Optimal path size {}", tg_opath.size());
-  MatchedCandidatePath matched_candidate_path(tg_opath.size());
-  std::transform(tg_opath.begin(), tg_opath.end(),
-                 matched_candidate_path.begin(),
-                 [](const TGNode *a) {
-    return MatchedCandidate{
-      *(a->c), a->ep, a->tp, a->sp_dist
-    };
-  });
-  O_Path opath(tg_opath.size());
-  std::transform(tg_opath.begin(), tg_opath.end(),
-                 opath.begin(),
-                 [](const TGNode *a) {
-    return a->c->edge->id;
-  });
-  std::vector<int> indices;
-  C_Path cpath = build_cpath(tg_opath, &indices, config.reverse_tolerance);
+  std::vector<TGOpath> tg_opaths = tg.backtrack();
+  SPDLOG_DEBUG("Optimal path size {}", tg_opaths[0].size());
+  std::vector<MatchedCandidatePath> matched_candidate_paths = build_matched_candidate_paths(tg_opaths);
+  std::vector<O_Path> opaths = build_opaths(tg_opaths);
+  std::vector<std::vector<int>> indices;
+  std::vector<C_Path> cpaths = build_cpaths(tg_opaths, &indices, config.reverse_tolerance);
   SPDLOG_DEBUG("Opath is {}", opath);
   SPDLOG_DEBUG("Indices is {}", indices);
   SPDLOG_DEBUG("Complete path is {}", cpath);
-  LineString mgeom = network_.complete_path_to_geometry(
-    traj.geom, cpath);
-  return MatchResult{
-    traj.id, matched_candidate_path, opath, cpath, indices, mgeom};
+  std::vector<MatchResult> match_results;
+  int loop_counter = 0;
+  for (C_path cpath:cpaths){
+    LineString mgeom = network_.complete_path_to_geometry(
+      traj.geom, cpath);
+    MatchResult match_result{
+      traj.id, 
+      matched_candidate_paths[loop_counter], 
+      opath[loop_counter],
+      cpath,
+      indices[loop_counter],
+      mgeom
+    };
+    match_results.push_back()
+    loop_counter++;
+  }
+
+  return match_results
 }
 
 std::string STMATCH::match_gps_file(
@@ -385,44 +391,84 @@ std::vector<double> STMATCH::shortest_path_upperbound(
   return distances;
 }
 
-C_Path STMATCH::build_cpath(const TGOpath &opath, std::vector<int> *indices,
+std::vector<MatchedCandidatePath> STMATCH::build_matched_candidate_paths(
+  const std::vector<TGOpath> &tg_opaths
+  ){
+  std::vector<MatchedCandidatePath> matched_candidate_paths;
+  for (TGOpath tg_opath:tg_opaths){
+    MatchedCandidatePath matched_candidate_path(tg_opath.size());
+    std::transform(tg_opath.begin(), tg_opath.end(),
+                  matched_candidate_path.begin(),
+                  [](const TGNode *a) {
+      return MatchedCandidate{
+        *(a->c), a->ep, a->tp, a->sp_dist
+      };
+    });
+    matched_candidate_paths.push_back(matched_candidate_path);
+  }
+  return matched_candidate_paths;
+}
+
+std::vector<O_Path> STMATCH::build_opaths(
+  const std::vector<TGOpath> &tg_opaths
+  ){
+  std::vector<O_Path> opaths;
+  for (TGOpath tg_opath:tg_opaths){
+    O_Path opath(tg_opath.size());
+    std::transform(tg_opath.begin(), tg_opath.end(),
+                 opath.begin(),
+                 [](const TGNode *a) {
+      return a->c->edge->id;
+    });
+    opaths.push_back(opath);
+  }
+  return opaths;
+}
+
+std::vector<C_Path> STMATCH::build_cpaths(const std::vector<TGOpath> &opaths, std::vector<std::vector<int>> *all_indices,
   double reverse_tolerance) {
   SPDLOG_DEBUG("Build cpath from optimal candidate path");
-  C_Path cpath;
-  if (!indices->empty()) indices->clear();
-  if (opath.empty()) return cpath;
-  const std::vector<Edge> &edges = network_.get_edges();
-  int N = opath.size();
-  cpath.push_back(opath[0]->c->edge->id);
-  int current_idx = 0;
-  // SPDLOG_TRACE("Insert index {}", current_idx);
-  indices->push_back(current_idx);
-  for (int i = 0; i < N - 1; ++i) {
-    const Candidate *a = opath[i]->c;
-    const Candidate *b = opath[i + 1]->c;
-    // SPDLOG_TRACE("Check a {} b {}", a->edge->id, b->edge->id);
-    if ((a->edge->id != b->edge->id) ||
-        (a->offset-b->offset > a->edge->length * reverse_tolerance)) {
-      auto segs = graph_.shortest_path_dijkstra(a->edge->target,
-                                                b->edge->source);
-      // No transition found
-      if (segs.empty() && a->edge->target != b->edge->source) {
-        SPDLOG_TRACE("Candidate {} has disconnected edge {} to {}",
-          i, a->edge->id, b->edge->id);
-        indices->clear();
-        return {};
+  std::vector<C_Path> cpaths;
+  for (TGOpath opath:opaths){
+    C_path cpath;
+    std::vector<int> indices;
+    if (!opath.empty()){
+      const std::vector<Edge> &edges = network_.get_edges();
+      int N = opath.size();
+      cpath.push_back(opath[0]->c->edge->id);
+      int current_idx = 0;
+      // SPDLOG_TRACE("Insert index {}", current_idx);
+      indices.push_back(current_idx);
+      for (int i = 0; i < N - 1; ++i) {
+        const Candidate *a = opath[i]->c;
+        const Candidate *b = opath[i + 1]->c;
+        // SPDLOG_TRACE("Check a {} b {}", a->edge->id, b->edge->id);
+        if ((a->edge->id != b->edge->id) ||
+            (a->offset-b->offset > a->edge->length * reverse_tolerance)) {
+          auto segs = graph_.shortest_path_dijkstra(a->edge->target,
+                                                    b->edge->source);
+          // No transition found
+          if (segs.empty() && a->edge->target != b->edge->source) {
+            SPDLOG_TRACE("Candidate {} has disconnected edge {} to {}",
+              i, a->edge->id, b->edge->id);
+            indices.clear();
+            return {};
+          }
+          for (int e:segs) {
+            cpath.push_back(edges[e].id);
+            ++current_idx;
+          }
+          cpath.push_back(b->edge->id);
+          ++current_idx;
+          indices.push_back(current_idx);
+        } else {
+          indices.push_back(current_idx);
+        }
       }
-      for (int e:segs) {
-        cpath.push_back(edges[e].id);
-        ++current_idx;
-      }
-      cpath.push_back(b->edge->id);
-      ++current_idx;
-      indices->push_back(current_idx);
-    } else {
-      indices->push_back(current_idx);
     }
+    all_indices->push_back(indices);
+    cpaths.push_back(cpath);
   }
   SPDLOG_DEBUG("Build cpath from optimal candidate path done");
-  return cpath;
+  return cpaths;
 }
