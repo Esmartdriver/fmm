@@ -96,7 +96,7 @@ MatchResult FastMapMatch::match_traj(const Trajectory &traj,
   update_tg(&tg, traj, config.reverse_tolerance);
   SPDLOG_DEBUG("Optimal path inference");
   std::vector<TGOpath> tg_opaths = tg.backtrack();
-  TGOpath tg_opath = tg_opaths.at(0)
+  TGOpath tg_opath = tg_opaths.at(0);
   SPDLOG_DEBUG("Optimal path size {}", tg_opath.size());
   MatchedCandidatePath matched_candidate_path(tg_opath.size());
   std::transform(tg_opath.begin(), tg_opath.end(),
